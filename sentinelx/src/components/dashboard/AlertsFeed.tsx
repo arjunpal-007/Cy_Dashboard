@@ -33,7 +33,7 @@ export const AlertsFeed: React.FC<AlertsFeedProps> = ({ alerts }) => {
   };
 
   return (
-    <div className="space-y-3 max-h-96 overflow-y-auto">
+    <div className="h-full space-y-3 overflow-y-auto pr-1">
       {alerts.map((alert, index) => (
         <motion.div
           key={alert.id}

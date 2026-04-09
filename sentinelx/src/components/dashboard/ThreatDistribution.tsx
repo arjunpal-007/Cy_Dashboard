@@ -2,6 +2,8 @@
 
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import type { TooltipContentProps } from "recharts/types/component/Tooltip";
+import type { PieLabelRenderProps } from "recharts/types/polar/Pie";
 import { useTheme } from "@/context/ThemeContext";
 import { ChartContainer } from "./ChartContainer";
 
@@ -18,13 +20,13 @@ interface ThreatDistributionProps {
 function ThreatDistributionTooltip({
   active,
   payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ name?: string; value?: number }>;
-}) {
+}: TooltipContentProps) {
   const { isDarkMode } = useTheme();
   if (active && payload && payload.length && payload[0]) {
     const payloadData = payload[0];
+    const tooltipValue = Array.isArray(payloadData.value)
+      ? payloadData.value[0]
+      : payloadData.value;
     return (
       <div
         className={
@@ -34,10 +36,10 @@ function ThreatDistributionTooltip({
         }
       >
         <p className={`text-xs font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-          {payloadData.name || "Unknown"}
+          {String(payloadData.name ?? "Unknown")}
         </p>
         <p className={`mt-1 text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-          {`${payloadData.value ?? 0}%`}
+          {`${Number(tooltipValue ?? 0)}%`}
         </p>
       </div>
     );
@@ -52,15 +54,18 @@ function ThreatPiePercentLabel({
   innerRadius,
   outerRadius,
   percent,
-}: {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  percent: number;
-}) {
+}: PieLabelRenderProps) {
   const { isDarkMode } = useTheme();
+  if (
+    cx === undefined ||
+    cy === undefined ||
+    midAngle === undefined ||
+    innerRadius === undefined ||
+    outerRadius === undefined ||
+    percent === undefined
+  ) {
+    return null;
+  }
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -100,7 +105,7 @@ export const ThreatDistribution: React.FC<ThreatDistributionProps> = ({ data }) 
             cx="50%"
             cy="46%"
             labelLine={false}
-            label={ThreatPiePercentLabel}
+            label ={ThreatPiePercentLabel}
             outerRadius="72%"
             fill="#8884d8"
             dataKey="value"

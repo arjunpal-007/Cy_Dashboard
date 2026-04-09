@@ -224,7 +224,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex min-h-[360px] min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827] sm:p-6 md:h-full"
+              className="flex h-[360px] min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827] sm:p-6"
             >
               <h3 className="mb-3 shrink-0 text-lg font-semibold text-gray-900 dark:text-white">
                 Threat Distribution
@@ -238,7 +238,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex min-h-[360px] min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827] sm:p-6 md:h-full"
+              className="flex h-[360px] min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827] sm:p-6"
             >
               <h3 className="mb-3 shrink-0 text-lg font-semibold text-gray-900 dark:text-white">
                 Top Attacking IPs
@@ -270,10 +270,12 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="min-w-0 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827] sm:p-6"
+            className="flex h-[360px] min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-[#111827] sm:p-6"
           >
             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Recent Alerts</h3>
-            <AlertsFeed alerts={mockAlerts} />
+            <div className="min-h-0 flex-1">
+              <AlertsFeed alerts={mockAlerts} />
+            </div>
           </motion.div>
         </div>
       </div>
