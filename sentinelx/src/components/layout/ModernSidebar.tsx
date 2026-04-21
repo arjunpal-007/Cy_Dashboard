@@ -42,37 +42,37 @@ export function ModernSidebar() {
   const [isHovering, setIsHovering] = useState(false);
   const [hoverIntent, setHoverIntent] = useState<NodeJS.Timeout | null>(null);
   const { isDarkMode, toggleTheme } = useTheme();
-  
+
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Handle hover intent with delay
   const handleMouseEnter = () => {
     if (isPinned) return;
-    
+
     // Clear existing timeout
     if (hoverIntent) clearTimeout(hoverIntent);
-    
+
     // Set new timeout for hover intent
     const timeout = setTimeout(() => {
       setIsHovering(true);
       setIsExpanded(true);
     }, 100);
-    
+
     setHoverIntent(timeout);
   };
 
   const handleMouseLeave = () => {
     if (isPinned) return;
-    
+
     // Clear existing timeout
     if (hoverIntent) clearTimeout(hoverIntent);
-    
+
     // Set new timeout for leave intent
     const timeout = setTimeout(() => {
       setIsHovering(false);
       setIsExpanded(false);
     }, 150);
-    
+
     setHoverIntent(timeout);
   };
 
@@ -83,12 +83,12 @@ export function ModernSidebar() {
       // Clear auth data from localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
+
       // Clear Zustand auth state
       const { useAuth } = require('@/hooks/use-auth');
       const { logout } = useAuth.getState();
       logout();
-      
+
       // Force redirect to landing page
       window.location.href = '/';
     } catch (error) {
@@ -103,14 +103,14 @@ export function ModernSidebar() {
   const togglePin = () => {
     const newPinnedState = !isPinned;
     setIsPinned(newPinnedState);
-    
+
     // If unpinning and not hovering, collapse immediately
     if (!newPinnedState && !isHovering) {
       setIsExpanded(false);
     } else if (newPinnedState) {
       setIsExpanded(true);
     }
-    
+
     // Emit event for layout to adjust spacing when pinning
     window.dispatchEvent(new CustomEvent('sidebarExpanded', { detail: { expanded: newPinnedState } }));
   };
@@ -118,14 +118,14 @@ export function ModernSidebar() {
   return (
     <>
       {/* Sidebar */}
-      <aside 
+      <aside
         className={cn(
           /* In-flow so the row reserves width; fixed was collapsing the flex sibling and overlapping main */
-          "relative shrink-0 h-screen border-r",
+          "relative shrink-0 h-screen border-r backdrop-blur-md",
           "transition-[width] duration-[350ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-          isDarkMode 
-            ? "bg-sidebar border-border" 
-            : "bg-white border-r border-gray-200",
+          isDarkMode
+            ? "bg-sidebar/40 border-white/5"
+            : "bg-white/40 border-r border-black/10",
           isExpanded ? "w-[240px]" : "w-[70px]"
         )}
         onMouseEnter={handleMouseEnter}
@@ -133,14 +133,14 @@ export function ModernSidebar() {
       >
         {/* Subtle glow effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent pointer-events-none" />
-        
+
         <div className="relative h-full flex flex-col">
           {/* Navigation */}
           <nav className="flex-1 p-2 space-y-1 pt-4">
             {navItems.map((item) => {
               const active = pathname.startsWith(item.href);
               const isHovered = hoveredItem === item.href;
-              
+
               return (
                 <div key={item.href} className="relative">
                   {/* Tooltip for collapsed state */}
@@ -153,7 +153,7 @@ export function ModernSidebar() {
                       <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-card rotate-45 border-t border-r border-border" />
                     </div>
                   )}
-                  
+
                   <Link
                     href={item.href}
                     className={cn(
@@ -162,12 +162,12 @@ export function ModernSidebar() {
                       "hover:scale-[1.04]",
                       isExpanded ? "gap-3 px-3 py-2.5 justify-start" : "justify-center px-2 py-2.5",
                       pathname === item.href
-                        ? (isDarkMode 
-                            ? "bg-accent text-accent-foreground border border-accent/50"
-                            : "bg-green-50 text-green-600 border border-green-200")
+                        ? (isDarkMode
+                          ? "bg-accent text-accent-foreground border border-accent/50"
+                          : "bg-green-50 text-green-600 border border-green-200")
                         : (isDarkMode
-                            ? "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
-                            : "text-gray-700 hover:bg-gray-100 border border-transparent")
+                          ? "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
+                          : "text-gray-700 hover:bg-gray-100 border border-transparent")
                     )}
                     onMouseEnter={() => setHoveredItem(item.href)}
                     onMouseLeave={() => setHoveredItem(null)}
@@ -176,7 +176,7 @@ export function ModernSidebar() {
                     {isHovered && !active && (
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg" />
                     )}
-                    
+
                     {/* Icon container */}
                     <div className="relative flex-shrink-0">
                       <item.icon className={cn(
@@ -188,7 +188,7 @@ export function ModernSidebar() {
                             : "text-green-700"
                           : "text-inherit",
                       )} />
-                      
+
                       {/* Badge */}
                       {item.badge > 0 && (
                         <span className={cn(
@@ -199,21 +199,21 @@ export function ModernSidebar() {
                           {item.badge > 99 ? "99+" : item.badge}
                         </span>
                       )}
-                      
+
                       {/* Active indicator */}
                       {active && (
                         <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1.5 h-1.5 bg-green-400 rounded-full" />
                       )}
                     </div>
-                    
+
                     {/* Text */}
                     <AnimatePresence>
                       {isExpanded && (
                         <motion.span
                           initial={{ opacity: 0, translateX: -10 }}
                           animate={{ opacity: 1, translateX: 0 }}
-                          transition={{ 
-                            duration: 0.2, 
+                          transition={{
+                            duration: 0.2,
                             delay: 0.1,
                             ease: [0.4, 0, 0.2, 1]
                           }}
@@ -230,7 +230,7 @@ export function ModernSidebar() {
                         </motion.span>
                       )}
                     </AnimatePresence>
-                    
+
                     {/* Hover arrow */}
                     {isHovered && isExpanded && (
                       <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ml-auto" />
@@ -242,7 +242,7 @@ export function ModernSidebar() {
           </nav>
 
           {/* Bottom section */}
-          <div className="p-2 border-t border-border space-y-2">
+          <div className={cn("p-2 border-t space-y-2", isDarkMode ? "border-white/5" : "border-black/10")}>
             {/* Theme Toggle */}
             <motion.button
               onClick={() => toggleTheme()}
@@ -258,7 +258,7 @@ export function ModernSidebar() {
             >
               <div className="relative">
                 <motion.div
-                  animate={{ 
+                  animate={{
                     rotate: isDarkMode ? 360 : 0,
                     transition: { duration: 0.6, ease: "easeInOut" }
                   }}
@@ -276,14 +276,14 @@ export function ModernSidebar() {
                   )}
                 </motion.div>
               </div>
-              
+
               <AnimatePresence>
                 {isExpanded && (
                   <motion.span
                     initial={{ opacity: 0, translateX: -10 }}
                     animate={{ opacity: 1, translateX: 0 }}
-                    transition={{ 
-                      duration: 0.2, 
+                    transition={{
+                      duration: 0.2,
                       delay: 0.1,
                       ease: [0.4, 0, 0.2, 1]
                     }}
@@ -303,8 +303,8 @@ export function ModernSidebar() {
                 "transition-all duration-[350ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
                 "hover:scale-[1.02]",
                 isExpanded ? "gap-3 px-3 py-2.5 justify-start" : "justify-center px-2 py-2.5",
-                isPinned 
-                  ? "bg-primary/10 text-primary border border-primary/30" 
+                isPinned
+                  ? "bg-primary/10 text-primary border border-primary/30"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
               )}
               whileHover={{ scale: 1.02 }}
@@ -312,7 +312,7 @@ export function ModernSidebar() {
             >
               <div className="relative">
                 <motion.div
-                  animate={{ 
+                  animate={{
                     rotate: isPinned ? 45 : 0,
                     transition: { duration: 0.4, ease: "easeInOut" }
                   }}
@@ -331,14 +331,14 @@ export function ModernSidebar() {
                   )}
                 </motion.div>
               </div>
-              
+
               <AnimatePresence>
                 {isExpanded && (
                   <motion.span
                     initial={{ opacity: 0, translateX: -10 }}
                     animate={{ opacity: 1, translateX: 0 }}
-                    transition={{ 
-                      duration: 0.2, 
+                    transition={{
+                      duration: 0.2,
                       delay: 0.1,
                       ease: [0.4, 0, 0.2, 1]
                     }}
@@ -351,7 +351,7 @@ export function ModernSidebar() {
             </motion.button>
 
             {/* Divider */}
-            <div className="border-t border-border" />
+            <div className={cn("border-t", isDarkMode ? "border-white/5" : "border-black/10")} />
 
             {/* Logout button */}
             <motion.button
@@ -367,7 +367,7 @@ export function ModernSidebar() {
               whileTap={{ scale: 0.98 }}
             >
               <motion.div
-                animate={{ 
+                animate={{
                   rotate: isExpanded ? 180 : 0,
                   transition: { duration: 0.4, ease: "easeInOut" }
                 }}
@@ -377,14 +377,14 @@ export function ModernSidebar() {
                   isExpanded ? "h-5 w-5" : "h-4 w-4"
                 )} />
               </motion.div>
-              
+
               <AnimatePresence>
                 {isExpanded && (
                   <motion.span
                     initial={{ opacity: 0, translateX: -10 }}
                     animate={{ opacity: 1, translateX: 0 }}
-                    transition={{ 
-                      duration: 0.2, 
+                    transition={{
+                      duration: 0.2,
                       delay: 0.1,
                       ease: [0.4, 0, 0.2, 1]
                     }}
