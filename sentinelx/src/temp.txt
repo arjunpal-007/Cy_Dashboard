@@ -1,0 +1,38 @@
+The Backend (Python & FastAPI)
+The backend (located inside the backend/ directory) is built using Python with the FastAPI framework. It acts as the core engine for the SentinelX platform. Here is a summary of what the backend code is doing:
+
+API Endpoints & Routing: The entry point is backend/app/main.py. It handles incoming HTTP requests from the frontend, defines CORS rules (to allow cross-origin requests), and provides basic authentication (currently using a mocked dev token dev_token_12345 for the user admin@sentinelx.com).
+Real-time WebSockets: A crucial part of the backend is the ConnectionManager class. It manages persistent WebSocket connections (/ws) with the frontend dashboard. This allows the backend to instantly stream live data to the UI.
+Redis Pub/Sub: The backend has a background task (broadcast_redis_messages) that subscribes to Redis message channels (like logs_channel, alerts_channel, threats_channel, and incidents_channel). When a new threat or log is pushed to Redis, the backend immediately broadcasts it to all connected WebSocket clients.
+Database Integration: It uses SQLAlchemy (an ORM) to interact with a PostgreSQL database, managing tables and models (located in backend/app/models/). It also includes Alembic for handling database structure migrations.
+Security Engines (Disabled in Dev): The code contains logic for a detection_engine and a soar_engine (Security Orchestration, Automation, and Response). In the current development state, these are commented out so the app can run cleanly locally without heavy dependencies, but in production, they are responsible for analyzing data and triggering automated security responses.
+2. What are the .bat and .sh files doing?
+These are automation scripts designed to make your life easier as a developer.
+
+start-dev.bat (Windows): This is a batch script used to launch the entire local development environment in one go. When you double-click it or run it, it:
+Checks if you have Python and Node.js installed.
+Automatically creates a Python Virtual Environment (venv) for the backend.
+Installs all required Python dependencies from requirements.txt and Node dependencies from package.json.
+Opens up two separate terminal windows simultaneously—one running the Python backend server (run.py) and the other running the Next.js frontend (npm run dev).
+start-dev.sh / QUICK_DEPLOY.sh (Mac/Linux): These do the exact same automated setup, but are written as shell scripts for Unix-based operating systems.
+3. What is Docker doing here? (docker-compose.production.yml)
+Docker is a technology used to package an application and all its dependencies into standardized, isolated units called "containers." This ensures that the application will run exactly the same way on a production server as it does on your local machine, without any "it works on my machine" bugs.
+
+Dockerfile / Dockerfile.production: These files act like a recipe. They tell Docker how to build the environment for the backend (e.g., "Install Python 3, copy these files, install these requirements, and expose port 8080").
+docker-compose.production.yml: This is the orchestrator for your production environment. Instead of manually starting databases and servers, this file defines a massive 7-container ecosystem that all boot up together and talk to each other over a private internal network (sentinelx_network). It spins up:
+postgres: The SQL database holding persistent data.
+redis: The in-memory cache and message broker for WebSockets.
+backend: The FastAPI Python application.
+frontend: The Next.js UI.
+prometheus & grafana: (See below).
+nginx: (See below).
+4. What are Grafana & Prometheus doing? (monitoring/)
+These tools are specifically designed for observability and server monitoring in a production environment.
+
+Prometheus: A time-series database and monitoring tool. The prometheus.yml file tells Prometheus to continuously "scrape" the backend and infrastructure to record metrics (like CPU usage, memory consumption, request rates, and error spikes).
+Grafana: A visualization dashboard. While Prometheus collects the raw data, Grafana provides the graphical interface to view that data. The monitoring/grafana/provisioning folder automatically pre-loads data sources and dashboards into Grafana so that as soon as the container boots, an administrator can see beautiful graphs of the server's health on port 3001.
+5. Other Files: What is Nginx? (nginx/nginx.conf)
+Nginx is acting as a Reverse Proxy for the production deployment. When deployed to a real server, you don't expose your Next.js and FastAPI apps directly to the public internet. Instead, Nginx sits at the very front (on ports 80 and 443).
+
+When a user visits yourdomain.com/, Nginx receives the request and silently passes it to the Next.js frontend container.
+When a request goes to yourdomain.com/api/v1/... or /ws, Nginx recognizes it's an API call and routes it seamlessly to the Python backend container. It acts as the traffic cop, ensuring security, handling SSL/HTTPS certificates, and improving performance.
