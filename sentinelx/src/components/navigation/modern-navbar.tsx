@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  Shield, 
-  TrendingUp, 
-  Users, 
-  Settings, 
-  Menu, 
-  X, 
-  Sun, 
-  Moon 
+import {
+  LayoutDashboard,
+  Shield,
+  TrendingUp,
+  Users,
+  Settings,
+  Menu,
+  X,
+  Sun,
+  Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -66,10 +66,11 @@ export function ModernNavbar({ currentPath = "/dashboard", className }: ModernNa
   // Handle scroll effect for navbar background
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      const scrolled = window.scrollY > 10;
+      setIsScrolled((prev) => (prev !== scrolled ? scrolled : prev));
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -105,12 +106,12 @@ export function ModernNavbar({ currentPath = "/dashboard", className }: ModernNa
   };
 
   return (
-    <nav 
+    <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isDarkMode 
-          ? isScrolled 
-            ? "bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50" 
+        isDarkMode
+          ? isScrolled
+            ? "bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50"
             : "bg-slate-900/80 backdrop-blur-lg border-b border-slate-800/30"
           : isScrolled
             ? "bg-white/95 backdrop-blur-xl border-b border-gray-200/50"
@@ -171,14 +172,14 @@ export function ModernNavbar({ currentPath = "/dashboard", className }: ModernNa
                 >
                   {item.icon}
                   <span className="font-medium">{item.name}</span>
-                  
+
                   {/* Hover underline/glow effect */}
                   <div className={cn(
                     "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300",
                     "bg-gradient-to-r from-blue-500/10 to-cyan-500/10",
                     isActive(item.href) ? "opacity-100" : "opacity-0"
                   )} />
-                  
+
                   {/* Active indicator */}
                   {isActive(item.href) && (
                     <motion.div
@@ -230,7 +231,7 @@ export function ModernNavbar({ currentPath = "/dashboard", className }: ModernNa
                 ) : (
                   <Sun className="w-5 h-5" />
                 )}
-                
+
                 {/* Glow effect */}
                 <div className={cn(
                   "absolute inset-0 rounded-full opacity-0 transition-opacity duration-[300ms]",
