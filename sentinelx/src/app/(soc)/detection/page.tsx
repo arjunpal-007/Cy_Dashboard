@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, Download, RotateCcw, Plus, Settings, Activity, AlertTriangle, Target } from 'lucide-react';
+import { Play, Pause, Download, RotateCcw, Plus, Settings, Activity, AlertTriangle, Target, Brain } from 'lucide-react';
 import { useDetection } from '@/hooks/use-detection';
 import { useDetectionRealtime } from '@/hooks/use-detection-realtime';
 import { DetectionRulesTable } from '@/components/detection/detection-rules-table';
@@ -25,6 +25,7 @@ export default function DetectionPage() {
     updateRule,
     deleteRule,
     exportDetections,
+    trainAI,
     refreshDetections
   } = useDetection();
 
@@ -124,6 +125,22 @@ export default function DetectionPage() {
             >
               <RotateCcw className="h-4 w-4" />
               Refresh
+            </button>
+
+            {/* Train AI */}
+            <button
+              onClick={async () => {
+                try {
+                  await trainAI();
+                  alert("AI Model trained successfully!");
+                } catch (e) {
+                  alert("Training failed: Not enough logs in database yet.");
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors shadow-lg shadow-purple-500/20"
+            >
+              <Brain className="h-4 w-4" />
+              Train AI
             </button>
 
             {/* Export */}

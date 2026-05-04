@@ -13,8 +13,8 @@ from app.core.config import settings
 from app.models.database import Base, engine
 from app.api import api_router
 from app.services.redis_client import redis_client
-# from app.services.detection_engine import detection_engine
-# from app.services.soar_engine import soar_engine
+from app.services.detection_engine import detection_engine
+from app.services.soar_engine import soar_engine
 
 # Configure logging
 logging.basicConfig(
@@ -23,8 +23,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create database tables (disabled for development without PostgreSQL)
-# Base.metadata.create_all(bind=engine)
+# Create database tables (SQLite will create them if they don't exist)
+Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,22 +33,22 @@ async def lifespan(app: FastAPI):
     logger.info("Starting SentinelX backend...")
     
     try:
-        # Initialize Redis connection (disabled for development)
-        # await redis_client.connect()
-        # logger.info("Redis connection established")
-        logger.info("Redis connection disabled - development mode")
+        # Initialize Redis connection (with fallback)
+        try:
+            await redis_client.connect()
+            logger.info("Redis connection established")
+        except Exception:
+            logger.warning("Redis connection failed - falling back to in-memory mode")
         
-        # Start detection engine (disabled for development)
-        # if settings.DETECTION_ENGINE_ENABLED:
-        #     await detection_engine.start()
-        #     logger.info("Detection engine started")
-        logger.info("Detection engine disabled - development mode")
+        # Start detection engine
+        if settings.DETECTION_ENGINE_ENABLED:
+            await detection_engine.start()
+            logger.info("Detection engine started")
         
-        # Start SOAR engine (disabled for development)
-        # if settings.SOAR_ENABLED:
-        #     await soar_engine.start()
-        #     logger.info("SOAR engine started")
-        logger.info("SOAR engine disabled - development mode")
+        # Start SOAR engine
+        if settings.SOAR_ENABLED:
+            await soar_engine.start()
+            logger.info("SOAR engine started")
         
         logger.info("SentinelX backend started successfully")
         
@@ -62,23 +62,18 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down SentinelX backend...")
     
     try:
-        # Stop detection engine (disabled for development)
-        # if settings.DETECTION_ENGINE_ENABLED:
-        #     await detection_engine.stop()
-        #     logger.info("Detection engine stopped")
-        logger.info("Detection engine already stopped - development mode")
+        # Stop engines
+        if settings.DETECTION_ENGINE_ENABLED:
+            await detection_engine.stop()
+        if settings.SOAR_ENABLED:
+            await soar_engine.stop()
         
-        # Stop SOAR engine (disabled for development)
-        # if settings.SOAR_ENABLED:
-        #     await soar_engine.stop()
-        #     logger.info("SOAR engine stopped")
-        logger.info("SOAR engine already stopped - development mode")
-        
-        # Close Redis connection (disabled for development)
-        # await redis_client.disconnect()
-        # logger.info("Redis connection closed")
-        logger.info("Redis connection already closed - development mode")
-        
+        # Close Redis
+        try:
+            await redis_client.disconnect()
+        except:
+            pass
+            
         logger.info("SentinelX backend shutdown complete")
         
     except Exception as e:

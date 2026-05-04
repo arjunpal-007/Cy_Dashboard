@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { detectionAPI } from '@/lib/api/detection';
+import { apiClient } from '@/lib/api-client';
 import { useDetectionRealtime } from './use-detection-realtime';
 import { DetectionRule, DetectionEvent, DetectionAnalytics, DetectionFilter, DetectionRuleType, DetectionSeverity, DetectionStatus } from '@/types/detection';
 
@@ -292,7 +293,7 @@ export function useDetection(initialFilter: Partial<DetectionFilter> = {}) {
   // Update events from WebSocket
   useEffect(() => {
     if (isConnected && threats.length > 0) {
-      setEvents(prev => [...(threats as DetectionEvent[]), ...prev].slice(0, 500));
+      setEvents(prev => [...(threats as unknown as DetectionEvent[]), ...prev].slice(0, 500));
     }
   }, [threats, isConnected]);
 
@@ -300,7 +301,7 @@ export function useDetection(initialFilter: Partial<DetectionFilter> = {}) {
   useEffect(() => {
     if (isConnected && threats.length > 0) {
       setRules(prev => prev.map(rule => {
-        const recentTriggers = threats.filter(event => event.ruleId === rule.id);
+        const recentTriggers = (threats as unknown as DetectionEvent[]).filter(event => event.ruleId === rule.id);
         if (recentTriggers.length > 0) {
           return {
             ...rule,
@@ -527,6 +528,18 @@ export function useDetection(initialFilter: Partial<DetectionFilter> = {}) {
     updateRule,
     deleteRule,
     exportDetections,
+    trainAI: async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.post('/ai/train');
+        return response;
+      } catch (error) {
+        console.error('Failed to train AI model:', error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
     refreshDetections: () => setEvents(generateMockDetectionEvents(100))
   };
 }

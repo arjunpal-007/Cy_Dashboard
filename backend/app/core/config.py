@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     SESSION_EXPIRE_HOURS: int = 24
     
     # Database Configuration
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: Optional[str] = "sqlite:///./sentinelx.db"
     DATABASE_HOST: str = "localhost"
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str = "sentinelx"
@@ -33,15 +33,19 @@ class Settings(BaseSettings):
     
     @validator("DATABASE_URL", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: dict) -> str:
-        if isinstance(v, str):
+        if isinstance(v, str) and v != "":
             return v
-        return (
-            f"postgresql://{values.get('DATABASE_USER')}:"
-            f"{values.get('DATABASE_PASSWORD')}@"
-            f"{values.get('DATABASE_HOST')}:"
-            f"{values.get('DATABASE_PORT')}/"
-            f"{values.get('DATABASE_NAME')}"
-        )
+        
+        # If no DATABASE_URL is provided, use Postgres as fallback only if host is set
+        if values.get('DATABASE_HOST') and values.get('DATABASE_USER'):
+            return (
+                f"postgresql://{values.get('DATABASE_USER')}:"
+                f"{values.get('DATABASE_PASSWORD')}@"
+                f"{values.get('DATABASE_HOST')}:"
+                f"{values.get('DATABASE_PORT')}/"
+                f"{values.get('DATABASE_NAME')}"
+            )
+        return "sqlite:///./sentinelx.db"
     
     # Redis Configuration
     REDIS_URL: Optional[str] = None

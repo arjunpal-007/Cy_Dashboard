@@ -1,8 +1,10 @@
+import React from 'react';
+
 /**
  * Safe event handler utility to prevent undefined value errors
  */
 
-export const safeInputChange = (setter: (value: string) => void) => (e: any) => {
+export const safeInputChange = (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
   try {
     const value = e?.target?.value ?? '';
     console.log("SAFE INPUT CHANGE:", value);
@@ -13,7 +15,7 @@ export const safeInputChange = (setter: (value: string) => void) => (e: any) => 
   }
 };
 
-export const safeCheckboxChange = (setter: (value: boolean) => void) => (e: any) => {
+export const safeCheckboxChange = (setter: (value: boolean) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
   try {
     const checked = e?.target?.checked ?? false;
     console.log("SAFE CHECKBOX CHANGE:", checked);
@@ -24,7 +26,7 @@ export const safeCheckboxChange = (setter: (value: boolean) => void) => (e: any)
   }
 };
 
-export const safeSelectChange = (setter: (value: string) => void) => (e: any) => {
+export const safeSelectChange = (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLSelectElement>) => {
   try {
     const value = e?.target?.value ?? '';
     console.log("SAFE SELECT CHANGE:", value);
@@ -35,7 +37,7 @@ export const safeSelectChange = (setter: (value: string) => void) => (e: any) =>
   }
 };
 
-export const safeNumberChange = (setter: (value: number) => void, defaultValue: number = 0) => (e: any) => {
+export const safeNumberChange = (setter: (value: number) => void, defaultValue: number = 0) => (e: React.ChangeEvent<HTMLInputElement>) => {
   try {
     const value = e?.target?.value ?? defaultValue;
     const numValue = parseInt(value) || defaultValue;

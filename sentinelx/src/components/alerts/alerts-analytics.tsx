@@ -9,12 +9,18 @@ interface AlertsAnalyticsProps {
   analytics: AlertAnalytics;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-card text-card-foreground border border-border rounded-lg p-3">
         <p className="text-xs text-muted-foreground mb-2">{`Time/Date: ${label}`}</p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index) => (
           <p key={index} className="text-xs" style={{ color: entry.color }}>
             {`${entry.name}: ${entry.value}`}
           </p>
@@ -36,19 +42,6 @@ export const AlertsAnalytics = React.memo(function AlertsAnalytics({ analytics }
     }
   };
 
-  const getSourceColor = (source: string) => {
-    const colors: Record<string, string> = {
-      'Auth': '#00ff88',
-      'API': '#00ccff',
-      'Firewall': '#ff0080',
-      'IDS': '#ff00ff',
-      'Network': '#ffaa00',
-      'System': '#00ffff'
-    };
-    return colors[source] || '#64748b';
-  };
-
-  const COLORS = ['#ff0040', '#ff6600', '#ffaa00', '#00ccff'];
 
 
   return (

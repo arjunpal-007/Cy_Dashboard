@@ -93,7 +93,7 @@ export function HeroSection() {
           let newVy = particle.vy + 0.3; // Gravity effect
           let newVx = particle.vx * 0.98; // Air resistance
           let newY = particle.y + newVy;
-          let newX = particle.x + newVx;
+          const newX = particle.x + newVx;
           
           // Anti-gravity bounce effect
           if (newY > window.innerHeight - 50) {

@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.models.database import Base
 import enum
@@ -23,8 +22,8 @@ class ThreatType(str, enum.Enum):
 class Detection(Base):
     __tablename__ = "detections"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    log_id = Column(UUID(as_uuid=True), ForeignKey("logs.id"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    log_id = Column(String(36), ForeignKey("logs.id"), nullable=False, index=True)
     rule_triggered = Column(String(255), nullable=False)
     threat_type = Column(String(50), nullable=False, index=True)
     risk_score = Column(Integer, nullable=False, index=True)  # 1-100

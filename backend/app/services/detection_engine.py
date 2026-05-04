@@ -158,6 +158,40 @@ class XSSRule(DetectionRule):
         return None
 
 
+class AnomalyDetectionRule(DetectionRule):
+    """AI-based anomaly detection rule"""
+    
+    def __init__(self):
+        super().__init__(
+            "AI Anomaly Detection",
+            ThreatType.SUSPICIOUS_ACTIVITY,
+            65
+        )
+    
+    def check(self, log: Log) -> Optional[Dict[str, Any]]:
+        # This rule is called synchronously by the process_log method
+        # but we use the ai_service to predict
+        from app.services.ai_service import ai_service
+        
+        log_data = {
+            'status_code': log.status_code,
+            'method': log.method,
+            'payload': log.payload,
+            'endpoint': log.endpoint
+        }
+        
+        prediction = ai_service.predict(log_data)
+        
+        if prediction == -1.0: # Anomaly detected
+            return {
+                "description": "AI model flagged this log as a behavioral anomaly",
+                "prediction_score": prediction,
+                "engine": "IsolationForest"
+            }
+        
+        return None
+
+
 class ThreatIntelRule(DetectionRule):
     """Threat intelligence correlation rule"""
     
@@ -198,7 +232,8 @@ class DetectionEngine:
             SQLInjectionRule(),
             BruteForceRule(),
             XSSRule(),
-            ThreatIntelRule()
+            ThreatIntelRule(),
+            AnomalyDetectionRule()
         ]
         logger.info(f"Loaded {len(self.rules)} detection rules")
     

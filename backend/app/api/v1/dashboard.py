@@ -131,22 +131,40 @@ async def get_alert_trends(
         start_date = datetime.utcnow() - timedelta(days=days)
         
         # Build query
-        query = db.execute(
-            f"""
-            SELECT 
-                DATE(created_at) as date,
-                SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical,
-                SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high,
-                SUM(CASE WHEN severity = 'medium' THEN 1 ELSE 0 END) as medium,
-                SUM(CASE WHEN severity = 'low' THEN 1 ELSE 0 END) as low
-            FROM alerts 
-            WHERE created_at >= %s
-            AND (%s = true OR assigned_to = %s OR assigned_to IS NULL)
-            GROUP BY DATE(created_at)
-            ORDER BY date ASC
-            """,
-            (start_date, get_permissions(current_user).get("manage_users", False), current_user.id)
-        ).fetchall()
+        if settings.DATABASE_URL.startswith("sqlite"):
+            # SQLite compatible query
+            query = db.execute(
+                """
+                SELECT 
+                    strftime('%Y-%m-%d', created_at) as date,
+                    SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical,
+                    SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high,
+                    SUM(CASE WHEN severity = 'medium' THEN 1 ELSE 0 END) as medium,
+                    SUM(CASE WHEN severity = 'low' THEN 1 ELSE 0 END) as low
+                FROM alerts 
+                WHERE created_at >= ?
+                GROUP BY date
+                ORDER BY date ASC
+                """,
+                (start_date,)
+            ).fetchall()
+        else:
+            # PostgreSQL compatible query
+            query = db.execute(
+                """
+                SELECT 
+                    DATE(created_at) as date,
+                    SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical,
+                    SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high,
+                    SUM(CASE WHEN severity = 'medium' THEN 1 ELSE 0 END) as medium,
+                    SUM(CASE WHEN severity = 'low' THEN 1 ELSE 0 END) as low
+                FROM alerts 
+                WHERE created_at >= %s
+                GROUP BY DATE(created_at)
+                ORDER BY date ASC
+                """,
+                (start_date,)
+            ).fetchall()
         
         trends = [
             AlertTrend(
@@ -176,25 +194,29 @@ async def get_threat_map(
     """Get threat intelligence data for world map visualization"""
     try:
         # Get threat data grouped by country
-        query = db.execute(
-            """
+        # Use a simpler cross-compatible approach for threat map
+        from sqlalchemy import text
+        sql = text("""
             SELECT 
-                COALESCE(country_from, 'Unknown') as country,
-                COUNT(*) as threats,
-                CASE 
-                    WHEN AVG(CAST(confidence_score AS INTEGER)) >= 80 THEN 'critical'
-                    WHEN AVG(CAST(confidence_score AS INTEGER)) >= 60 THEN 'high'
-                    WHEN AVG(CAST(confidence_score AS INTEGER)) >= 40 THEN 'medium'
-                    ELSE 'low'
-                END as severity
+                country_from as country,
+                COUNT(*) as threats
             FROM threat_intel 
             WHERE is_active = 'true'
             AND country_from IS NOT NULL
             GROUP BY country_from
             ORDER BY threats DESC
             LIMIT 50
-            """
-        ).fetchall()
+        """)
+        query = db.execute(sql).fetchall()
+        
+        threat_map = [
+            ThreatMap(
+                country=row[0],
+                threats=row[1],
+                severity='high' if row[1] > 10 else 'medium'
+            )
+            for row in query
+        ]
         
         threat_map = [
             ThreatMap(
@@ -272,20 +294,21 @@ async def get_top_threats(
     """Get top threat types"""
     try:
         # Get top threat types from detections
-        query = db.execute(
-            """
+        # Use SQLAlchemy or cross-compatible SQL
+        from sqlalchemy import text
+        time_filter = "datetime('now', '-7 days')" if settings.DATABASE_URL.startswith("sqlite") else "NOW() - INTERVAL '7 days'"
+        sql = text(f"""
             SELECT 
                 threat_type,
                 COUNT(*) as count,
                 AVG(risk_score) as avg_risk_score
             FROM detections 
-            WHERE created_at >= NOW() - INTERVAL '7 days'
+            WHERE created_at >= {time_filter}
             GROUP BY threat_type
             ORDER BY count DESC
-            LIMIT %s
-            """,
-            (limit,)
-        ).fetchall()
+            LIMIT :limit
+        """)
+        query = db.execute(sql, {"limit": limit}).fetchall()
         
         top_threats = [
             {

@@ -1,5 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Integer, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, DateTime, Integer, Text, ForeignKey, JSON
 from sqlalchemy.sql import func
 from app.models.database import Base
 import uuid
@@ -8,14 +7,14 @@ import uuid
 class Log(Base):
     __tablename__ = "logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True, default=func.now())
     ip_address = Column(String(45), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     endpoint = Column(String(255), nullable=False)
     method = Column(String(10), nullable=False)
     status_code = Column(Integer, nullable=False)
-    payload = Column(JSONB, nullable=True)
+    payload = Column(JSON, nullable=True)
     user_agent = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

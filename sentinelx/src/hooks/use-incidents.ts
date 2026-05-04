@@ -101,7 +101,7 @@ function generateMockIncidents(count: number = 100): Incident[] {
       })),
       linkedAlerts: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, k) => `alert-${Date.now()}-${i}-${k}`),
       tags: [incidentType.toLowerCase().replace(' ', '-'), severity.toLowerCase(), impact.toLowerCase()],
-      notes: [],
+      notes: [] as IncidentNote[],
       timeline: generateTimeline(`incident-${Date.now()}-${i}`, createdAt),
       riskScore: Math.floor(Math.random() * 100) + 1,
       estimatedResolutionTime: resolutionTime,
@@ -109,7 +109,7 @@ function generateMockIncidents(count: number = 100): Incident[] {
       priority: severity === 'CRITICAL' ? 1 : severity === 'HIGH' ? 2 : severity === 'MEDIUM' ? 3 : 4,
       sourceAlertId: `alert-${Date.now()}-${i}`,
       correlationId,
-      evidence: []
+      evidence: [] as IncidentEvidence[]
     };
   });
 }

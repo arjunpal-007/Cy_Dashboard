@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Palette, Globe, Clock, Volume2, Monitor, Settings, Save, X } from 'lucide-react';
+import { Palette, Globe, Volume2, Monitor, Settings, Save, X } from 'lucide-react';
 import { UserPreferences } from '@/types/settings';
 import { cn } from '@/lib/utils/cn';
 
@@ -317,9 +317,8 @@ export function Preferences({ preferences, onUpdate, isLoading }: PreferencesPro
                   onChange={(e) => setEditedPreferences(prev => ({
                     ...prev,
                     dashboard: {
+                      ...(prev.dashboard || preferences.dashboard),
                       defaultTab: e.target.value,
-                      refreshInterval: prev.dashboard?.refreshInterval ?? preferences.dashboard.refreshInterval,
-                      compactMode: prev.dashboard?.compactMode ?? preferences.dashboard.compactMode,
                     }
                   }))}
                   className="w-full px-3 py-2 bg-black/50 border border-green-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50"
@@ -406,8 +405,7 @@ export function Preferences({ preferences, onUpdate, isLoading }: PreferencesPro
                   onChange={(e) => setEditedPreferences(prev => ({
                     ...prev,
                     accessibility: {
-                      highContrast: prev.accessibility?.highContrast ?? preferences.accessibility.highContrast,
-                      reducedMotion: prev.accessibility?.reducedMotion ?? preferences.accessibility.reducedMotion,
+                      ...(prev.accessibility || preferences.accessibility),
                       fontSize: e.target.value as 'small' | 'medium' | 'large',
                     }
                   }))}

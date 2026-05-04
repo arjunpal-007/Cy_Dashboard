@@ -32,7 +32,7 @@ export interface WorkflowAction {
   type: ActionType;
   name: string;
   description: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   enabled: boolean;
   order: number;
   requiresApproval: boolean;
@@ -44,7 +44,7 @@ export interface WorkflowCondition {
   id: string;
   field: string;
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'not_contains' | 'in' | 'not_in';
-  value: any;
+  value: unknown;
   enabled: boolean;
 }
 
@@ -65,14 +65,14 @@ export interface WorkflowExecution {
   startTime: Date;
   endTime?: Date;
   triggeredBy: 'automatic' | 'manual';
-  triggerData?: Record<string, any>;
+  triggerData?: Record<string, unknown>;
   currentStep?: string;
   executedSteps: Array<{
     stepId: string;
     status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
     startTime?: Date;
     endTime?: Date;
-    result?: any;
+    result?: unknown;
     error?: string;
   }>;
   logs: Array<{

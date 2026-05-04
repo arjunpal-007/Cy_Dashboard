@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useWebSocket } from './use-websocket';
+import { apiClient } from '@/lib/api-client';
 
 // Mock data for development
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 interface DashboardStats {
   total_alerts: number;
@@ -44,13 +45,36 @@ interface ActivityFeed {
   source_ip?: string;
 }
 
+interface Alert {
+  id: number;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  status: 'open' | 'investigating' | 'mitigated' | 'monitoring' | 'resolved';
+  timestamp: string;
+  source: string;
+}
+
+interface SystemHealth {
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage: number;
+  network_latency: number;
+  active_connections: number;
+  services_status: {
+    detection_engine: string;
+    soar_engine: string;
+    database: string;
+    redis: string;
+  };
+}
+
 export function useDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [trends, setTrends] = useState<AlertTrend[]>([]);
   const [threatMap, setThreatMap] = useState<ThreatMap[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityFeed[]>([]);
-  const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
-  const [systemHealth, setSystemHealth] = useState<any>(null);
+  const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +133,7 @@ const { lastMessage, isConnected } = { lastMessage: null, isConnected: false };
             { id: '5', type: 'alert', title: 'Phishing attempt blocked', severity: 'high', status: 'mitigated', timestamp: '2024-04-02T10:10:00Z' },
           ];
 
-          const mockRecentAlerts = [
+          const mockRecentAlerts: Alert[] = [
             { id: 1, title: 'Critical SQL Injection Attempt', severity: 'critical', status: 'open', timestamp: '2024-04-02T10:30:00Z', source: 'Web Application Firewall' },
             { id: 2, title: 'Suspicious File Upload', severity: 'high', status: 'investigating', timestamp: '2024-04-02T10:25:00Z', source: 'File Scanner' },
             { id: 3, title: 'Brute Force Attack Detected', severity: 'high', status: 'mitigated', timestamp: '2024-04-02T10:20:00Z', source: 'Authentication System' },
@@ -138,8 +162,7 @@ const { lastMessage, isConnected } = { lastMessage: null, isConnected: false };
           setRecentAlerts(mockRecentAlerts);
           setSystemHealth(mockSystemHealth);
         } else {
-          // Original API calls (commented out for now)
-          /*
+          // Original API calls
           const [
             statsData,
             trendsData,
@@ -156,13 +179,12 @@ const { lastMessage, isConnected } = { lastMessage: null, isConnected: false };
             apiClient.getSystemHealth(),
           ]);
 
-          setStats(statsData);
-          setTrends(trendsData);
-          setThreatMap(threatMapData);
-          setActivityFeed(activityData);
-          setRecentAlerts(recentAlertsData);
-          setSystemHealth(healthData);
-          */
+          setStats(statsData as any);
+          setTrends(trendsData as any);
+          setThreatMap(threatMapData as any);
+          setActivityFeed(activityData as any);
+          setRecentAlerts(recentAlertsData as any);
+          setSystemHealth(healthData as any);
         }
 
       } catch (err) {

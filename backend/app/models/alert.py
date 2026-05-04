@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.models.database import Base
 import enum
@@ -23,15 +22,15 @@ class AlertStatus(str, enum.Enum):
 class Alert(Base):
     __tablename__ = "alerts"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    detection_id = Column(UUID(as_uuid=True), ForeignKey("detections.id"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    detection_id = Column(String(36), ForeignKey("detections.id"), nullable=False, index=True)
     severity = Column(String(20), nullable=False, index=True)
     status = Column(String(20), default=AlertStatus.OPEN, nullable=False, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     source_ip = Column(String(45), nullable=True, index=True)
     target_ip = Column(String(45), nullable=True, index=True)
-    assigned_to = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    assigned_to = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

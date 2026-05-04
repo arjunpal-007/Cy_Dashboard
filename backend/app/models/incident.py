@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.models.database import Base
@@ -25,13 +24,13 @@ class IncidentStatus(str, enum.Enum):
 class Incident(Base):
     __tablename__ = "incidents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     severity = Column(String(20), nullable=False, index=True)
     status = Column(String(20), default=IncidentStatus.OPEN, nullable=False, index=True)
-    assigned_to = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    assigned_to = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     impact_assessment = Column(Text, nullable=True)
     resolution_notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -49,9 +48,9 @@ class Incident(Base):
 class IncidentAlert(Base):
     __tablename__ = "incident_alerts"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    incident_id = Column(UUID(as_uuid=True), ForeignKey("incidents.id"), nullable=False, index=True)
-    alert_id = Column(UUID(as_uuid=True), ForeignKey("alerts.id"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    incident_id = Column(String(36), ForeignKey("incidents.id"), nullable=False, index=True)
+    alert_id = Column(String(36), ForeignKey("alerts.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
