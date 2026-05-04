@@ -111,6 +111,36 @@ function makeEarthTexture(): THREE.CanvasTexture {
   return t;
 }
 
+// Shared geometries to save massive amounts of RAM
+const sharedGeometries = {
+  core: new THREE.SphereGeometry(1, 16, 16),
+  glow: new THREE.SphereGeometry(2.8, 16, 16),
+  ring: new THREE.RingGeometry(1.5, 2.2, 32),
+};
+
+// Shared materials
+const createMarkerMaterials = (color: number) => ({
+  core: new THREE.MeshBasicMaterial({ color }),
+  glow: new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.18 }),
+  ring: new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+});
+
+const sharedMaterials: Record<string, ReturnType<typeof createMarkerMaterials>> = {
+  critical: createMarkerMaterials(0xff3333),
+  high: createMarkerMaterials(0xff9500),
+  medium: createMarkerMaterials(0xffd700),
+  low: createMarkerMaterials(0x34d399),
+  default: createMarkerMaterials(0x00ffff)
+};
+
+const sharedArcMaterials: Record<string, THREE.LineBasicMaterial> = {
+  critical: new THREE.LineBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.65 }),
+  high: new THREE.LineBasicMaterial({ color: 0xff9500, transparent: true, opacity: 0.65 }),
+  medium: new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.65 }),
+  low: new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.65 }),
+  default: new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.65 })
+};
+
 /* ────────────────────────────────────────────────────────────────
    Component
    ──────────────────────────────────────────────────────────────── */
@@ -136,88 +166,80 @@ export default function GlobeThreatMap({
   const linesRef = useRef(attackLines);
   linesRef.current = attackLines;
 
-  /* ── Build markers from current threats ref ──────────────── */
+  /* ── Build markers from current threats ref (Object Pool) ── */
   const rebuildMarkers = useCallback(() => {
     const st = stateRef.current;
     if (!st) return;
     const grp = st.markers;
-    while (grp.children.length) {
-      const child = grp.children[0] as THREE.Group;
-      grp.remove(child);
-      child.children.forEach(c => {
-        if (c instanceof THREE.Mesh) {
-          if (c.geometry) c.geometry.dispose();
-          if (c.material) {
-            if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
-            else c.material.dispose();
-          }
-        }
-      });
-    }
+    const currentThreats = threatsRef.current;
 
-    for (const t of threatsRef.current) {
-      const col  = new THREE.Color(sevColor(t.severity));
-      const size = sevSize(t.severity);
-      const pos  = ll2v3(t.lat, t.lng, MARKER_ALT);
-
-      // Bright solid core
-      const core = new THREE.Mesh(
-        new THREE.SphereGeometry(size, 16, 16),
-        new THREE.MeshBasicMaterial({ color: col }),
-      );
-
-      // Outer glow sphere
-      const glow = new THREE.Mesh(
-        new THREE.SphereGeometry(size * 2.8, 16, 16),
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.18 }),
-      );
-
-      // Flat ring indicator on the surface
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(size * 1.5, size * 2.2, 32),
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
-      );
-      // Orient ring to face outward from globe center
-      ring.lookAt(pos.clone().multiplyScalar(2));
-
+    // Expand pool if necessary
+    while (grp.children.length < currentThreats.length) {
+      const core = new THREE.Mesh(sharedGeometries.core, sharedMaterials.default.core);
+      const glow = new THREE.Mesh(sharedGeometries.glow, sharedMaterials.default.glow);
+      const ring = new THREE.Mesh(sharedGeometries.ring, sharedMaterials.default.ring);
       const mg = new THREE.Group();
-      mg.position.copy(pos);
       mg.add(core);
       mg.add(glow);
       mg.add(ring);
       grp.add(mg);
     }
+
+    // Update existing instances
+    for (let i = 0; i < grp.children.length; i++) {
+      const mg = grp.children[i] as THREE.Group;
+      if (i < currentThreats.length) {
+        const t = currentThreats[i];
+        const size = sevSize(t.severity);
+        const pos = ll2v3(t.lat, t.lng, MARKER_ALT);
+        const matSet = sharedMaterials[t.severity.toLowerCase()] || sharedMaterials.default;
+
+        mg.visible = true;
+        mg.position.copy(pos);
+        mg.scale.set(size, size, size); // Base scale per severity
+        
+        // We inject the original base scale into userData so the animation loop can read it
+        mg.userData.baseScale = size;
+
+        (mg.children[0] as THREE.Mesh).material = matSet.core;
+        (mg.children[1] as THREE.Mesh).material = matSet.glow;
+        (mg.children[2] as THREE.Mesh).material = matSet.ring;
+
+        mg.children[2].lookAt(pos.clone().multiplyScalar(2));
+      } else {
+        mg.visible = false;
+      }
+    }
   }, []);
 
-  /* ── Build arcs from current lines ref ───────────────────── */
+  /* ── Build arcs from current lines ref (Object Pool) ─────── */
   const rebuildArcs = useCallback(() => {
     const st = stateRef.current;
     if (!st) return;
     const grp = st.arcs;
-    while (grp.children.length) {
-      const child = grp.children[0] as THREE.Line;
-      grp.remove(child);
-      if (child.geometry) child.geometry.dispose();
-      if (child.material) {
-        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-        else child.material.dispose();
-      }
+    const currentLines = linesRef.current;
+
+    while (grp.children.length < currentLines.length) {
+      grp.add(new THREE.Line(new THREE.BufferGeometry(), sharedArcMaterials.default));
     }
 
-    for (const ln of linesRef.current) {
-      const s = ll2v3(ln.from[0], ln.from[1], MARKER_ALT);
-      const e = ll2v3(ln.to[0],   ln.to[1],   MARKER_ALT);
-      const d = s.distanceTo(e);
-      const m = s.clone().lerp(e, 0.5).normalize().multiplyScalar(MARKER_ALT + d * 0.25);
-      const pts = new THREE.QuadraticBezierCurve3(s, m, e).getPoints(48);
-      grp.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(pts),
-        new THREE.LineBasicMaterial({
-          color: new THREE.Color(sevColor(ln.severity)),
-          transparent: true,
-          opacity: 0.65,
-        }),
-      ));
+    for (let i = 0; i < grp.children.length; i++) {
+      const line = grp.children[i] as THREE.Line;
+      if (i < currentLines.length) {
+        const ln = currentLines[i];
+        line.visible = true;
+        line.material = sharedArcMaterials[ln.severity.toLowerCase()] || sharedArcMaterials.default;
+
+        const s = ll2v3(ln.from[0], ln.from[1], MARKER_ALT);
+        const e = ll2v3(ln.to[0],   ln.to[1],   MARKER_ALT);
+        const d = s.distanceTo(e);
+        const m = s.clone().lerp(e, 0.5).normalize().multiplyScalar(MARKER_ALT + d * 0.25);
+        const pts = new THREE.QuadraticBezierCurve3(s, m, e).getPoints(48);
+
+        line.geometry.setFromPoints(pts);
+      } else {
+        line.visible = false;
+      }
     }
   }, []);
 
@@ -370,10 +392,15 @@ export default function GlobeThreatMap({
         st.frameId = requestAnimationFrame(loop);
         st.controls.update();
 
-        // Pulse markers
+        // Pulse markers (factoring in the new shared geometry baseScale)
         const elapsed = clock.getElapsedTime();
-        const p = 1 + Math.sin(elapsed * 3) * 0.18;
-        st.markers.children.forEach((g) => g.scale.set(p, p, p));
+        const pulse = 1 + Math.sin(elapsed * 3) * 0.18;
+        st.markers.children.forEach((g) => {
+          if (!g.visible) return;
+          const baseSize = g.userData.baseScale || 1;
+          const p = baseSize * pulse;
+          g.scale.set(p, p, p);
+        });
 
         st.renderer.render(st.scene, st.camera);
       };

@@ -1,21 +1,74 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useMemo, memo } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowRight, Shield, Activity, Zap, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
-interface Particle {
-  id: number;
-  left: number;
-  top: number;
-  duration: number;
-  delay: number;
+interface ParticleProps {
+  particle: {
+    id: number;
+    left: number;
+    top: number;
+    duration: number;
+    delay: number;
+  };
 }
 
+const Particle = memo(({ particle }: ParticleProps) => (
+  <motion.div
+    className="absolute w-1 h-1 bg-green-400 rounded-full"
+    style={{
+      left: `${particle.left}%`,
+      top: `${particle.top}%`,
+      willChange: "transform, opacity",
+    }}
+    animate={{
+      y: [0, -100, 0],
+      opacity: [0, 1, 0],
+    }}
+    transition={{
+      duration: particle.duration,
+      repeat: Infinity,
+      delay: particle.delay,
+      ease: "easeInOut",
+    }}
+  />
+));
+
+import { useRef } from 'react';
+
+const MouseFollower = memo(() => {
+  const followerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (followerRef.current) {
+        // Native DOM update for absolute minimum latency (zero React/Framer overhead)
+        followerRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  return (
+    <div
+      ref={followerRef}
+      className="fixed top-0 left-0 w-12 h-12 -ml-6 -mt-6 bg-green-400/30 rounded-full blur-xl pointer-events-none z-50 mix-blend-screen"
+      style={{
+        transform: 'translate3d(-100px, -100px, 0)',
+        willChange: 'transform',
+      }}
+    />
+  );
+});
+
+MouseFollower.displayName = 'MouseFollower';
+
 export function HeroSection() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const [particles, setParticles] = useState<any[]>([]);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -23,18 +76,8 @@ export function HeroSection() {
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  useEffect(() => {
     if (!isClient) return;
     
-    // Generate particles only on client side to prevent hydration mismatch
     const generatedParticles = Array.from({ length: 20 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -45,36 +88,28 @@ export function HeroSection() {
     setParticles(generatedParticles);
   }, [isClient]);
 
+  const features = useMemo(() => [
+    { icon: Activity, title: "Real-time Detection", desc: "Advanced threat detection algorithms" },
+    { icon: Shield, title: "Automated Response", desc: "SOAR playbooks for instant mitigation" },
+    { icon: Zap, title: "AI-Powered", desc: "Machine learning for enhanced accuracy" }
+  ], []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-black via-slate-900 to-black">
+      {/* Interactive Mouse Follower - Self-contained native DOM tracker */}
+      {isClient && <MouseFollower />}
+
       {/* Animated Background Grid */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[linear-gradient(60deg,transparent_24%,rgba(57,255,20,0.05)_25%,transparent_26%,transparent_74%,rgba(0,245,255,0.05)_75%,transparent_76%,transparent)] bg-[length:80px_80px]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(57,255,20,0.1)_50%,transparent_100%)]" />
       </div>
 
-      {/* Floating Particles - Only render after client hydration */}
+      {/* Floating Particles */}
       {isClient && (
-        <div className="absolute inset-0">
-          {particles.map((particle) => (
-            <motion.div
-              key={particle.id}
-              className="absolute w-1 h-1 bg-green-400 rounded-full"
-              style={{
-                left: `${particle.left}%`,
-                top: `${particle.top}%`,
-              }}
-              animate={{
-                y: [0, -100, 0],
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: particle.duration,
-                repeat: Infinity,
-                delay: particle.delay,
-                ease: "easeInOut",
-              }}
-            />
+        <div className="absolute inset-0 pointer-events-none">
+          {particles.map((p) => (
+            <Particle key={p.id} particle={p} />
           ))}
         </div>
       )}
@@ -114,7 +149,6 @@ export function HeroSection() {
                 </span>
               </motion.div>
               
-              {/* Tagline */}
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -125,7 +159,6 @@ export function HeroSection() {
                 automated response, and comprehensive security monitoring.
               </motion.p>
 
-              {/* CTA Buttons */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -138,11 +171,9 @@ export function HeroSection() {
                     "group relative px-8 py-4 bg-gradient-to-r from-green-500 to-green-400 text-black font-bold text-lg rounded-xl transition-all duration-300 shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:from-green-400 hover:to-green-500",
                     "transform hover:scale-105 active:scale-95"
                   )}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   Get Started
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300" />
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </motion.a>
 
                 <motion.a
@@ -151,8 +182,6 @@ export function HeroSection() {
                     "group relative px-8 py-4 bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 text-slate-300 font-semibold text-lg rounded-xl transition-all duration-300 hover:bg-slate-700/50 hover:text-white hover:border-slate-600",
                     "transform hover:scale-105 active:scale-95"
                   )}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   View Platform
                   <Globe className="ml-2 h-5 w-5 transition-transform duration-300" />
@@ -160,17 +189,8 @@ export function HeroSection() {
               </motion.div>
 
               {/* Feature Highlights */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-6"
-              >
-                {[
-                  { icon: Activity, title: "Real-time Detection", desc: "Advanced threat detection algorithms" },
-                  { icon: Shield, title: "Automated Response", desc: "SOAR playbooks for instant mitigation" },
-                  { icon: Zap, title: "AI-Powered", desc: "Machine learning for enhanced accuracy" }
-                ].map((feature, index) => (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-12">
+                {features.map((feature, index) => (
                   <motion.div
                     key={feature.title}
                     initial={{ opacity: 0, y: 20 }}
@@ -183,7 +203,7 @@ export function HeroSection() {
                     <p className="text-slate-400 text-sm">{feature.desc}</p>
                   </motion.div>
                 ))}
-              </motion.div>
+              </div>
             </div>
           </motion.div>
 
@@ -195,29 +215,14 @@ export function HeroSection() {
             className="hidden lg:block"
           >
             <div className="relative">
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 min-h-[400px]">
                 <h3 className="text-white font-bold text-xl mb-6 text-center">
                   Live Threat Map
                 </h3>
-                <div className="relative h-64 bg-slate-900/50 rounded-lg overflow-hidden">
-                  {/* Interactive Mouse Follower */}
-                  {isClient && (
-                    <motion.div
-                      className="absolute w-4 h-4 bg-green-400 rounded-full blur-lg"
-                      animate={{
-                        x: mousePosition.x - 8,
-                        y: mousePosition.y - 8,
-                      }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 28,
-                      }}
-                    />
-                  )}
-                  
+                <div className="relative h-64 bg-slate-900/50 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+                  <span className="text-slate-500 font-medium">Interactive Demo Area</span>
                   {/* Grid Pattern */}
-                  <div className="absolute inset-0">
+                  <div className="absolute inset-0 opacity-20">
                     {[...Array(10)].map((_, i) => (
                       <div
                         key={i}
